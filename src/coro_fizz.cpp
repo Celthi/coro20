@@ -3,6 +3,13 @@
 #include <optional>
 #include <source_location>
 
+
+struct YiedAwaitable {
+    constexpr bool await_ready() const noexcept { return false; }
+    constexpr void await_suspend(std::coroutine_handle<>) const noexcept {}
+    constexpr void await_resume() const noexcept {}
+};
+
 using Value = int;
 // The coroutine that generates numbers
 class GenNumber
@@ -40,9 +47,15 @@ public:
         explicit GenNumberAwaiter(handle_type p) : producer_handler(p) {}
 
         bool await_ready() const { return false; }
-        handle_type await_suspend(std::coroutine_handle<>) const { return producer_handler; }
+        handle_type await_suspend(std::coroutine_handle<>) const
+        { 
+            return producer_handler;
+        }
 
-        std::optional<Value> await_resume() { return producer_handler.promise().value; }
+        std::optional<Value> await_resume()
+        {
+            return producer_handler.promise().value;
+        }
     };
     // promise_type is the place to store data about the coroutine result
     // and the policy for the coroutine
@@ -62,7 +75,7 @@ public:
         void return_void() { }
         void unhandled_exception() { }
         // the co_yield expression will call this function
-        std::suspend_never yield_value(Value v) {
+        YiedAwaitable yield_value(Value v) {
             value = v;
             return {};
         }
@@ -160,6 +173,6 @@ int main()
     auto res = check_multiple(std::move(c), 3, "Fizz");
     while (std::optional<Value> vopt = res.next_value())
     {
-        std::cout << "value: " << *vopt << " ";
+        std::cout << "value: " << *vopt << " " << std::endl;
     }
 }
