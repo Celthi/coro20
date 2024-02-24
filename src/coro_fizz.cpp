@@ -6,7 +6,8 @@
 struct YieldAwaitable
 {
     std::coroutine_handle<> consumer_coro_handle;
-    YieldAwaitable(std::coroutine_handle<> h) : consumer_coro_handle(h) {}
+    YieldAwaitable() : consumer_coro_handle(nullptr) {}
+    explicit YieldAwaitable(std::coroutine_handle<> h) : consumer_coro_handle(h) {}
     constexpr bool await_ready() const noexcept { return false; }
     constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const noexcept
     {
@@ -28,6 +29,7 @@ public:
     using handle_type = std::coroutine_handle<promise_type>;
     handle_type handle; // the coroutine handle
     // rule of zero
+    GenNumber() = default;
     GenNumber(const GenNumber &) = delete;            // 1. no copy constructor
     GenNumber &operator=(const GenNumber &) = delete; // 2. no copy assignment
     explicit GenNumber(handle_type h) : handle(h) {}  // 3. constructor
@@ -73,7 +75,7 @@ public:
         int limit;
         std::optional<Value> value;
         std::coroutine_handle<> consumer_coro_handle;
-
+        promise_type() = default;
         explicit promise_type(int limit) : limit(limit) {}
         GenNumber get_return_object()
         {
@@ -94,12 +96,12 @@ public:
 };
 
 // the consumer coroutine
-class UserFacing
+class Consumer
 {
 public:
     struct promise_type;
     using handle_type = std::coroutine_handle<promise_type>;
-    handle_type handle; // UserFacing coroutine handle
+    handle_type handle; // Consumer coroutine handle
     struct promise_type
     {
         std::optional<Value> value;                                     // the value to be returned
@@ -107,9 +109,9 @@ public:
         promise_type(const GenNumber &source, int divisor, std::string fizz) : producer_handle(source.handle) {}
         promise_type(const promise_type &) = delete;
         promise_type &operator=(const promise_type &) = delete;
-        UserFacing get_return_object()
+        Consumer get_return_object()
         {
-            return UserFacing{handle_type::from_promise(*this)};
+            return Consumer{handle_type::from_promise(*this)};
         }
         std::suspend_always initial_suspend() const { return {}; }
         std::suspend_always final_suspend() const noexcept { return {}; }
@@ -130,20 +132,20 @@ public:
         }
     };
 
-    explicit UserFacing(handle_type h) : handle(h)
+    explicit Consumer(handle_type h) : handle(h)
     {
     }
-    UserFacing(UserFacing &&s) : handle(s.handle)
+    Consumer(Consumer &&s) : handle(s.handle)
     {
         s.handle = nullptr;
     }
-    UserFacing &operator=(UserFacing &&s) noexcept
+    Consumer &operator=(Consumer &&s) noexcept
     {
         handle = s.handle;
         s.handle = nullptr;
         return *this;
     }
-    ~UserFacing()
+    ~Consumer()
     {
         if (handle)
         {
@@ -176,7 +178,7 @@ GenNumber generate_numbers(int limit)
         co_yield v;
     }
 }
-UserFacing check_multiple(GenNumber source, int divisor, std::string fizz)
+Consumer consume_number(GenNumber source, int divisor, std::string fizz)
 {
     while (std::optional<Value> vopt = co_await source)
     {
@@ -190,7 +192,7 @@ UserFacing check_multiple(GenNumber source, int divisor, std::string fizz)
 int main()
 {
     GenNumber c = generate_numbers(9);
-    auto res = check_multiple(std::move(c), 3, "Fizz");
+    auto res = consume_number(std::move(c), 3, "Fizz");
     while (std::optional<Value> vopt = res.next_value())
     {
         std::cout << "value: " << *vopt << " " << std::endl;
