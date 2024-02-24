@@ -1,4 +1,4 @@
-target=fizz_coawait
+target=coro_fizz
 target_path=build/$target
 rm -rf $target_path
 cmake --build build --config Debug --target $target
