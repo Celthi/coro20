@@ -4,7 +4,7 @@
 #include <source_location>
 
 
-struct YiedAwaitable {
+struct YieldAwaitable {
     constexpr bool await_ready() const noexcept { return false; }
     constexpr void await_suspend(std::coroutine_handle<>) const noexcept {}
     constexpr void await_resume() const noexcept {}
@@ -72,10 +72,10 @@ public:
         std::suspend_always initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
         // the coroutine will not return value
-        void return_void() { }
-        void unhandled_exception() { }
+        void return_void() const { }
+        void unhandled_exception() const { }
         // the co_yield expression will call this function
-        YiedAwaitable yield_value(Value v) {
+        YieldAwaitable yield_value(Value v) {
             value = v;
             return {};
         }
@@ -165,6 +165,7 @@ UserFacing check_multiple(GenNumber source, int divisor, std::string fizz)
         {
         }
     }
+    std::cout<<"done"<<std::endl;
 }
 
 int main()
