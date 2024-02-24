@@ -3,10 +3,19 @@
 #include <optional>
 #include <source_location>
 
-
-struct YieldAwaitable {
+struct YieldAwaitable
+{
+    std::coroutine_handle<> consumer_coro_handle;
+    YieldAwaitable(std::coroutine_handle<> h) : consumer_coro_handle(h) {}
     constexpr bool await_ready() const noexcept { return false; }
-    constexpr void await_suspend(std::coroutine_handle<>) const noexcept {}
+    constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const noexcept
+    {
+        if (consumer_coro_handle)
+        {
+            return consumer_coro_handle;
+        }
+        return std::noop_coroutine();
+    }
     constexpr void await_resume() const noexcept {}
 };
 
@@ -48,7 +57,7 @@ public:
 
         bool await_ready() const { return false; }
         handle_type await_suspend(std::coroutine_handle<>) const
-        { 
+        {
             return producer_handler;
         }
 
@@ -63,8 +72,9 @@ public:
     {
         int limit;
         std::optional<Value> value;
+        std::coroutine_handle<> consumer_coro_handle;
 
-        explicit promise_type(int limit) : limit(limit) { }
+        explicit promise_type(int limit) : limit(limit) {}
         GenNumber get_return_object()
         {
             return GenNumber{handle_type::from_promise(*this)};
@@ -72,12 +82,13 @@ public:
         std::suspend_always initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
         // the coroutine will not return value
-        void return_void() const { }
-        void unhandled_exception() const { }
+        void return_void() const {}
+        void unhandled_exception() const {}
         // the co_yield expression will call this function
-        YieldAwaitable yield_value(Value v) {
+        YieldAwaitable yield_value(Value v)
+        {
             value = v;
-            return {};
+            return YieldAwaitable{consumer_coro_handle};
         }
     };
 };
@@ -93,7 +104,7 @@ public:
     {
         std::optional<Value> value;                                     // the value to be returned
         std::coroutine_handle<GenNumber::promise_type> producer_handle; // the producer coroutine handle
-        promise_type(const GenNumber &source, int divisor, std::string fizz) : producer_handle(source.handle) { }
+        promise_type(const GenNumber &source, int divisor, std::string fizz) : producer_handle(source.handle) {}
         promise_type(const promise_type &) = delete;
         promise_type &operator=(const promise_type &) = delete;
         UserFacing get_return_object()
@@ -102,12 +113,20 @@ public:
         }
         std::suspend_always initial_suspend() const { return {}; }
         std::suspend_always final_suspend() const noexcept { return {}; }
-        void return_void() const { }
-        void unhandled_exception() const { }
+        void return_void() const {}
+        void unhandled_exception() const {}
         // await_transform method
-        GenNumber::GenNumberAwaiter await_transform(const GenNumber &source) const
+        GenNumber::GenNumberAwaiter await_transform(const GenNumber &source)
         {
-            return GenNumber::GenNumberAwaiter{source.handle};
+
+            auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
+            source.handle.promise().consumer_coro_handle = std::coroutine_handle<promise_type>::from_promise(*this);
+            return awaitable;
+        }
+        std::suspend_always yield_value(std::optional<Value> v)
+        {
+            value = v;
+            return {};
         }
     };
 
@@ -163,14 +182,14 @@ UserFacing check_multiple(GenNumber source, int divisor, std::string fizz)
     {
         if (*vopt % divisor == 0)
         {
+            co_yield vopt;
         }
     }
-    std::cout<<"done"<<std::endl;
 }
 
 int main()
 {
-    GenNumber c = generate_numbers(3);
+    GenNumber c = generate_numbers(9);
     auto res = check_multiple(std::move(c), 3, "Fizz");
     while (std::optional<Value> vopt = res.next_value())
     {
