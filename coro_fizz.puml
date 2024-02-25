@@ -14,14 +14,13 @@ note over GenNumberAwaiter
 GenNumberAwaiter::await_suspend 
 end note
 
-GenNumberAwaiter -> generate_numbers : producer_handler.resume()
-GenNumberAwaiter -> generate_numbers : await_suspend
+GenNumberAwaiter -> generate_numbers : resume generate_numbers
 note over generate_numbers
 generate_numbers is about to yield 1 
 end note
 
 generate_numbers -> YieldAwaitable : yield_value
- -> consume_numbers : await_suspend
+YieldAwaitable -> consume_numbers : resume consume_numbers
 generate_numbers -> GenNumberAwaiter : await_resume
 GenNumberAwaiter -> consume_numbers : await_resume
 consume_numbers -> GenNumberAwaiter : co_await
@@ -42,7 +41,6 @@ note over GenNumberAwaiter
 GenNumberAwaiter::await_suspend 
 end note
 
-GenNumberAwaiter -> generate_numbers : producer_handler.resume()
-GenNumberAwaiter -> generate_numbers : await_suspend
+GenNumberAwaiter -> generate_numbers : resume generate_numbers
 YieldAwaitable -> consume_numbers : await_resume
 @enduml

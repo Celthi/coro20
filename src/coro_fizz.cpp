@@ -4,6 +4,8 @@
 #include <source_location>
 #include <fstream>
 #include <type_traits>
+#include <vector>
+#include <string>
 class PlantUML
 {
 private:
@@ -45,7 +47,7 @@ public:
         std::cout << "@enduml" << std::endl;
         m_file << "@enduml" << std::endl;
     }
-    void note_right(const std::string &note)
+    void note_right(std::string_view note)
     {
         std::cout << "note right\n"
                   << note << " \nend note\n"
@@ -55,7 +57,7 @@ public:
                << std::endl;
     }
 
-    void note_over(const std::string &note, const std::string &participant)
+    void note_over(std::string_view note, std::string_view participant)
     {
         std::cout << "note over " << participant << "\n"
                   << note << " \nend note\n"
@@ -65,17 +67,17 @@ public:
                << std::endl;
     }
 
-    void add_participant(const std::string &participant)
+    void add_participant(std::string_view participant)
     {
         std::cout << "participant " << participant << std::endl;
         m_file << "participant " << participant << std::endl;
     }
-    void message(const std::string &from, const std::string &to, const std::string &message)
+    void message(std::string_view from, std::string_view to, std::string_view message)
     {
         std::cout << from << " -> " << to << " : " << message << std::endl;
         m_file << from << " -> " << to << " : " << message << std::endl;
     }
-    void message(const std::string &from, const std::string &to, const std::string &message, const std::string &note)
+    void message(std::string_view from, std::string_view to, std::string_view message, std::string_view note)
     {
         this->message(from, to, message);
         note_right(note);
@@ -93,22 +95,23 @@ public:
     CoroHandler(std::string name, std::coroutine_handle<P> h) : m_name(std::move(name)), handle(h) {}
     CoroHandler(const CoroHandler<P> &) = default;
     template <typename T = P>
-    CoroHandler(const CoroHandler<std::enable_if_t<!std::is_void_v<T>, void>>& h) : m_name(h.m_name), handle(h.handle) {}
+    CoroHandler(const CoroHandler<std::enable_if_t<!std::is_void_v<T>, void>> &h) : m_name(h.m_name), handle(h.handle) {}
     CoroHandler() = default;
     CoroHandler &operator=(const CoroHandler<P> &) = default;
     CoroHandler(CoroHandler<P> &&s) = default;
     CoroHandler &operator=(CoroHandler<P> &&s) = default;
 
-    template <typename S=P, typename T>
-    CoroHandler &operator=(std::enable_if_t<!std::is_void_v<T> && std::is_void_v<S>, T>&& h) {
+    template <typename S = P, typename T>
+    CoroHandler &operator=(std::enable_if_t<!std::is_void_v<T> && std::is_void_v<S>, T> &&h)
+    {
         m_name = h.m_name;
         handle = h.handle;
         return *this;
     }
-    void suspend(std::string target)
+    void suspend(std::string_view target, std::string_view note = "")
     {
-        PlantUML::get_instance().message(m_name, target, "suspend()");
-        m_transfer_targets.push_back(target);
+        PlantUML::get_instance().message(m_name, target, note);
+        m_transfer_targets.emplace_back(std::string(target));
     }
 
     void resume()
@@ -133,9 +136,9 @@ public:
         return handle != nullptr;
     }
 
-    std::conditional_t<std::is_void_v<P>, std::coroutine_handle<>, std::coroutine_handle<P>> get_handle(const std::string &from, const std::string &msg)
+    std::conditional_t<std::is_void_v<P>, std::coroutine_handle<>, std::coroutine_handle<P>> get_handle_to_resume(std::string_view from)
     {
-        PlantUML::get_instance().message(from, m_name, msg);
+        PlantUML::get_instance().message(from, m_name, "resume " + m_name);
         return handle;
     }
 
@@ -149,19 +152,19 @@ public:
 
 struct YieldAwaitable
 {
-    CoroHandler<void> consumer_coro_handle;
     std::string m_name;
-    YieldAwaitable() : consumer_coro_handle("null", nullptr)
+    CoroHandler<void> consumer_coro_handle;
+    YieldAwaitable() : consumer_coro_handle("consume_numbers", nullptr)
     {
         m_name = "YieldAwaitable";
     }
-    explicit YieldAwaitable(CoroHandler<void> &h) : consumer_coro_handle(h) {}
+    explicit YieldAwaitable(CoroHandler<void> &h) : m_name("YieldAwaitable"), consumer_coro_handle(h) {}
     constexpr bool await_ready() const noexcept { return false; }
     std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
         if (consumer_coro_handle)
         {
-            return consumer_coro_handle.get_handle(m_name, "await_suspend");
+            return consumer_coro_handle.get_handle_to_resume(m_name);
         }
         return std::noop_coroutine();
     }
@@ -214,8 +217,7 @@ public:
         std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<>)
         {
             PlantUML::get_instance().note_over("GenNumberAwaiter::await_suspend", "GenNumberAwaiter");
-            PlantUML::get_instance().message("GenNumberAwaiter", "generate_numbers", "producer_handler.resume()");
-            return producer_handler.get_handle("GenNumberAwaiter", "await_suspend");
+            return producer_handler.get_handle_to_resume("GenNumberAwaiter");
         }
 
         std::optional<Value> await_resume()
@@ -232,9 +234,11 @@ public:
         int limit;
         std::optional<Value> value;
         CoroHandler<void> consumer_coro_handle;
+        CoroHandler<promise_type> handle;
         promise_type() = default;
         GenNumber get_return_object()
         {
+            this->handle = CoroHandler<promise_type>("generate_numbers", handle_type::from_promise(*this));
             return GenNumber{handle_type::from_promise(*this)};
         }
         std::suspend_always initial_suspend() { return {}; }
@@ -245,7 +249,8 @@ public:
         // the co_yield expression will call this function
         YieldAwaitable yield_value(Value v)
         {
-            PlantUML::get_instance().message("generate_numbers", "YieldAwaitable", "yield_value");
+            this->handle.suspend("YieldAwaitable", "yield_value");
+
             value = v;
             return YieldAwaitable{consumer_coro_handle};
         }
@@ -279,7 +284,7 @@ public:
         {
             PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_transform");
             auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
-            source.handle.promise().consumer_coro_handle.operator=<void, CoroHandler<promise_type>>(CoroHandler("consume_numbers", std::coroutine_handle<promise_type>::from_promise(*this)));
+            source.handle.promise().consumer_coro_handle.operator= <void, CoroHandler<promise_type>>(CoroHandler("consume_numbers", std::coroutine_handle<promise_type>::from_promise(*this)));
 
             return awaitable;
         }
