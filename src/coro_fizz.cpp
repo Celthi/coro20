@@ -9,7 +9,7 @@ struct YieldAwaitable
     YieldAwaitable() : consumer_coro_handle(nullptr) {}
     explicit YieldAwaitable(std::coroutine_handle<> h) : consumer_coro_handle(h) {}
     constexpr bool await_ready() const noexcept { return false; }
-    constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const noexcept
+    std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
         if (consumer_coro_handle)
         {
@@ -58,9 +58,9 @@ public:
         explicit GenNumberAwaiter(handle_type p) : producer_handler(p) {}
 
         bool await_ready() const { return false; }
-        handle_type await_suspend(std::coroutine_handle<>) const
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const
         {
-            return producer_handler;
+            return producer_handler;  
         }
 
         std::optional<Value> await_resume()
@@ -106,7 +106,7 @@ public:
     {
         std::optional<Value> value;                                     // the value to be returned
         std::coroutine_handle<GenNumber::promise_type> producer_handle; // the producer coroutine handle
-        promise_type(const GenNumber &source, int divisor, std::string fizz) : producer_handle(source.handle) {}
+        promise_type(const GenNumber &source, int divisor) : producer_handle(source.handle) {}
         promise_type(const promise_type &) = delete;
         promise_type &operator=(const promise_type &) = delete;
         Consumer get_return_object()
@@ -178,9 +178,10 @@ GenNumber generate_numbers(int limit)
         co_yield v;
     }
 }
-Consumer consume_number(GenNumber source, int divisor, std::string fizz)
+Consumer consume_number(GenNumber source, int divisor)
 {
-    while (std::optional<Value> vopt = co_await source)
+    std::cout<<"consume_number"<<std::endl;
+    while (std::optional<Value> vopt = co_await source) // await_transform -> GenNumber::GenNumberAwaiter -> GenNumber::await_suspend -> gen_number::resume() -> *yieldawaitable::await_suspend* -> consumer_coro_handle.resume() -> await_resume
     {
         if (*vopt % divisor == 0)
         {
@@ -192,7 +193,7 @@ Consumer consume_number(GenNumber source, int divisor, std::string fizz)
 int main()
 {
     GenNumber c = generate_numbers(9);
-    auto res = consume_number(std::move(c), 3, "Fizz");
+    auto res = consume_number(std::move(c), 3);
     while (std::optional<Value> vopt = res.next_value())
     {
         std::cout << "value: " << *vopt << " " << std::endl;
