@@ -273,6 +273,7 @@ Consumer consume_numbers(GenNumber source, int divisor)
         {
             co_yield vopt;
         }
+        PlantUML::get_instance().note_over("consume_numbers is about to co_await next value", "consume_numbers");
     }
     PlantUML::get_instance().note_over("consume_numbers end...", "consume_numbers");
 }
@@ -286,8 +287,8 @@ int main()
     PlantUML::get_instance().add_participant("GenNumberAwaiter");
     PlantUML::get_instance().add_participant("YieldAwaitable");
 
-    GenNumber c = generate_numbers(9);
-    auto res = consume_numbers(std::move(c), 3);
+    GenNumber c = generate_numbers(1);
+    auto res = consume_numbers(std::move(c), 1);
     PlantUML::get_instance().message("main", "consume_numbers", "consume_numbers.next_value()");
     while (std::optional<Value> vopt = res.next_value())
     {

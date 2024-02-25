@@ -1,0 +1,41 @@
+@startuml
+participant main
+participant consume_numbers
+participant generate_numbers
+participant GenNumberAwaiter
+participant YieldAwaitable
+main -> consume_numbers : consume_numbers.next_value()
+note over consume_numbers
+consume_numbers is about to call await_transform 
+end note
+
+consume_numbers -> GenNumberAwaiter : await_transform
+note over GenNumberAwaiter
+GenNumberAwaiter::await_suspend 
+end note
+
+GenNumberAwaiter -> generate_numbers : producer_handler.resume()
+note over generate_numbers
+generate_numbers is about to yield 1 
+end note
+
+generate_numbers -> YieldAwaitable : yield_value
+YieldAwaitable -> consume_numbers : consumer_coro_handle.resume()
+consume_numbers -> GenNumberAwaiter : co_await
+GenNumberAwaiter -> consume_numbers : await_resume
+note over consume_numbers
+consume_numbers co_await result = 1 
+end note
+
+note over main
+main: consume_numbers next value = 1 
+end note
+
+consume_numbers -> GenNumberAwaiter : await_transform
+note over GenNumberAwaiter
+GenNumberAwaiter::await_suspend 
+end note
+
+GenNumberAwaiter -> generate_numbers : producer_handler.resume()
+YieldAwaitable -> consume_numbers : await_resume
+@enduml
