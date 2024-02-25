@@ -11,13 +11,16 @@ struct YieldAwaitable
     constexpr bool await_ready() const noexcept { return false; }
     std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
+        std::cout<<"yieldawaitable::await_suspend"<<std::endl;
         if (consumer_coro_handle)
         {
             return consumer_coro_handle;
         }
         return std::noop_coroutine();
     }
-    constexpr void await_resume() const noexcept {}
+    void await_resume() noexcept {
+        std::cout<<"yieldawaitable::await_resume"<<std::endl;
+    }
 };
 
 using Value = int;
@@ -60,11 +63,13 @@ public:
         bool await_ready() const { return false; }
         std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const
         {
+            std::cout<<"GenNumberAwaiter::await_suspend"<<std::endl;
             return producer_handler;  
         }
 
         std::optional<Value> await_resume()
         {
+            std::cout<<"GenNumberAwaiter::await_resume"<<std::endl;
             return producer_handler.promise().value;
         }
     };
@@ -121,6 +126,7 @@ public:
         GenNumber::GenNumberAwaiter await_transform(const GenNumber &source)
         {
 
+            std::cout<< "Consumer::await_transform"<<std::endl;
             auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
             source.handle.promise().consumer_coro_handle = std::coroutine_handle<promise_type>::from_promise(*this);
             return awaitable;
@@ -174,20 +180,24 @@ GenNumber generate_numbers(int limit)
 
     for (int i = 1; i <= limit; i++)
     {
+        std::cout<<"generate_numbers yield "<< i << std::endl;
         Value v = i;
         co_yield v;
     }
 }
 Consumer consume_number(GenNumber source, int divisor)
 {
-    std::cout<<"consume_number"<<std::endl;
-    while (std::optional<Value> vopt = co_await source) // await_transform -> GenNumber::GenNumberAwaiter -> GenNumber::await_suspend -> gen_number::resume() -> *yieldawaitable::await_suspend* -> consumer_coro_handle.resume() -> await_resume
+    std::cout<<"consume_number start...\n"<<std::endl;
+    while (std::optional<Value> vopt = co_await source) // Consumer::await_transform -> GenNumberAwaiter::await_suspend ->generate_numbers::resume() -> *yieldawaitable::await_suspend* -> consumer_coro_handle.resume() -> GenNumberAwaiter::await_resume
     {
+        std::cout<<"consume_number co_await result = "<< *vopt << std::endl;
+
         if (*vopt % divisor == 0)
         {
             co_yield vopt;
         }
     }
+    std::cout<< "\nconsume_number end..."<<std::endl;
 }
 
 int main()
