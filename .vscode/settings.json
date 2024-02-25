@@ -57,6 +57,8 @@
         "vector": "cpp",
         "algorithm": "cpp",
         "__memory": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp"
     }
 }
