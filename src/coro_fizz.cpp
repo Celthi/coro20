@@ -2,6 +2,79 @@
 #include <coroutine>
 #include <optional>
 #include <source_location>
+#include <fstream>
+class PlantUML
+{
+    private:
+    std::string m_file_name;
+    std::ofstream m_file;
+
+public:
+    PlantUML(std::string file_name = "coro_fizz.puml") : m_file_name(file_name) {
+        m_file.open(m_file_name);
+        if (!m_file.is_open()) {
+            std::cerr << "Failed to open file " << m_file_name << std::endl;
+        }
+    }
+    ~PlantUML() {
+        if (m_file.is_open()) {
+            m_file.close();
+        }
+    }
+    PlantUML(const PlantUML &) = delete;
+    PlantUML &operator=(const PlantUML &) = delete;
+    PlantUML(PlantUML &&) = delete;
+    PlantUML &operator=(PlantUML &&) = delete;
+    static PlantUML& get_instance() {
+        static PlantUML instance;
+        return instance;
+    }
+    void startuml()
+    {
+        std::cout << "@startuml" << std::endl;
+        m_file << "@startuml" << std::endl;
+    }
+    void enduml()
+    {
+        std::cout << "@enduml" << std::endl;
+        m_file << "@enduml" << std::endl;
+    }
+    void note_right(const std::string &note)
+    {
+        std::cout << "note right\n"
+                  << note << " \nend note\n"
+                  << std::endl;
+        m_file << "note right\n"
+                << note << " \nend note\n"
+                << std::endl;
+    }
+
+    void note_over(const std::string &note, const std::string &participant)
+    {
+        std::cout << "note over " << participant << "\n"
+                  << note << " \nend note\n"
+                  << std::endl;
+        m_file << "note over " << participant << "\n"
+                << note << " \nend note\n"
+                << std::endl;
+    }
+
+    void add_participant(const std::string &participant)
+    {
+        std::cout << "participant " << participant << std::endl;
+        m_file << "participant " << participant << std::endl;
+    }
+    void message(const std::string &from, const std::string &to, const std::string &message)
+    {
+        std::cout << from << " -> " << to << " : " << message << std::endl;
+        m_file << from << " -> " << to << " : " << message << std::endl;
+    }
+    void message(const std::string &from, const std::string &to, const std::string &message, const std::string &note)
+    {
+        this->message(from, to, message);
+        note_right(note);
+    }
+};
 
 struct YieldAwaitable
 {
@@ -11,15 +84,17 @@ struct YieldAwaitable
     constexpr bool await_ready() const noexcept { return false; }
     std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
-        std::cout<<"yieldawaitable::await_suspend"<<std::endl;
+        PlantUML::get_instance().message("YieldAwaitable", "consume_numbers", "consumer_coro_handle.resume()");
         if (consumer_coro_handle)
         {
+            PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "co_await");
             return consumer_coro_handle;
         }
         return std::noop_coroutine();
     }
-    void await_resume() noexcept {
-        std::cout<<"yieldawaitable::await_resume"<<std::endl;
+    void await_resume() noexcept
+    {
+        PlantUML::get_instance().message("YieldAwaitable", "consume_numbers", "await_resume");
     }
 };
 
@@ -63,13 +138,14 @@ public:
         bool await_ready() const { return false; }
         std::coroutine_handle<> await_suspend(std::coroutine_handle<>) const
         {
-            std::cout<<"GenNumberAwaiter::await_suspend"<<std::endl;
-            return producer_handler;  
+            PlantUML::get_instance().note_over("GenNumberAwaiter::await_suspend", "GenNumberAwaiter");
+            PlantUML::get_instance().message("GenNumberAwaiter", "generate_numbers", "producer_handler.resume()");
+            return producer_handler;
         }
 
         std::optional<Value> await_resume()
         {
-            std::cout<<"GenNumberAwaiter::await_resume"<<std::endl;
+            PlantUML::get_instance().message("GenNumberAwaiter", "consume_numbers", "await_resume");
             return producer_handler.promise().value;
         }
     };
@@ -94,6 +170,7 @@ public:
         // the co_yield expression will call this function
         YieldAwaitable yield_value(Value v)
         {
+            PlantUML::get_instance().message("generate_numbers", "YieldAwaitable", "yield_value");
             value = v;
             return YieldAwaitable{consumer_coro_handle};
         }
@@ -126,7 +203,7 @@ public:
         GenNumber::GenNumberAwaiter await_transform(const GenNumber &source)
         {
 
-            std::cout<< "Consumer::await_transform"<<std::endl;
+            PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_transform");
             auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
             source.handle.promise().consumer_coro_handle = std::coroutine_handle<promise_type>::from_promise(*this);
             return awaitable;
@@ -180,32 +257,41 @@ GenNumber generate_numbers(int limit)
 
     for (int i = 1; i <= limit; i++)
     {
-        std::cout<<"generate_numbers yield "<< i << std::endl;
+        PlantUML::get_instance().note_over("generate_numbers is about to yield " + std::to_string(i), "generate_numbers");
         Value v = i;
         co_yield v;
     }
 }
-Consumer consume_number(GenNumber source, int divisor)
+
+Consumer consume_numbers(GenNumber source, int divisor)
 {
-    std::cout<<"consume_number start...\n"<<std::endl;
+    PlantUML::get_instance().note_over("consume_numbers is about to call await_transform", "consume_numbers");
     while (std::optional<Value> vopt = co_await source) // Consumer::await_transform -> GenNumberAwaiter::await_suspend ->generate_numbers::resume() -> *yieldawaitable::await_suspend* -> consumer_coro_handle.resume() -> GenNumberAwaiter::await_resume
     {
-        std::cout<<"consume_number co_await result = "<< *vopt << std::endl;
-
+        PlantUML::get_instance().note_over("consume_numbers co_await result = " + std::to_string(*vopt), "consume_numbers");
         if (*vopt % divisor == 0)
         {
             co_yield vopt;
         }
     }
-    std::cout<< "\nconsume_number end..."<<std::endl;
+    PlantUML::get_instance().note_over("consume_numbers end...", "consume_numbers");
 }
 
 int main()
 {
+    PlantUML::get_instance().startuml();
+    PlantUML::get_instance().add_participant("main");
+    PlantUML::get_instance().add_participant("consume_numbers");
+    PlantUML::get_instance().add_participant("generate_numbers");
+    PlantUML::get_instance().add_participant("GenNumberAwaiter");
+    PlantUML::get_instance().add_participant("YieldAwaitable");
+
     GenNumber c = generate_numbers(9);
-    auto res = consume_number(std::move(c), 3);
+    auto res = consume_numbers(std::move(c), 3);
+    PlantUML::get_instance().message("main", "consume_numbers", "consume_numbers.next_value()");
     while (std::optional<Value> vopt = res.next_value())
     {
-        std::cout << "value: " << *vopt << " " << std::endl;
+        PlantUML::get_instance().note_over("main: consume_numbers next value = " + std::to_string(*vopt), "main");
     }
+    PlantUML::get_instance().enduml();
 }
