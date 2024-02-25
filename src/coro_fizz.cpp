@@ -91,10 +91,12 @@ public:
     std::coroutine_handle<P> handle;
     std::vector<std::string> m_transfer_targets;
     CoroHandler(std::string name, std::coroutine_handle<P> h) : m_name(std::move(name)), handle(h) {}
-    CoroHandler(const CoroHandler &) = default;
-    CoroHandler &operator=(const CoroHandler &) = default;
-    CoroHandler(CoroHandler &&s) = default;
-    CoroHandler &operator=(CoroHandler &&s) = default;
+    //CoroHandler(const CoroHandler<P> &) = default;
+    CoroHandler(const CoroHandler<std::conditional_t<std::is_void_v<P>, std::coroutine_handle<>, std::coroutine_handle<P>>>& h) : m_name(h.m_name), handle(h.handle) {}
+    
+    CoroHandler &operator=(const CoroHandler<P> &) = default;
+    CoroHandler(CoroHandler<P> &&s) = default;
+    CoroHandler &operator=(CoroHandler<P> &&s) = default;
 
     void suspend(std::string target)
     {
