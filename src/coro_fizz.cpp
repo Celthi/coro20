@@ -91,13 +91,20 @@ public:
     std::coroutine_handle<P> handle;
     std::vector<std::string> m_transfer_targets;
     CoroHandler(std::string name, std::coroutine_handle<P> h) : m_name(std::move(name)), handle(h) {}
-    //CoroHandler(const CoroHandler<P> &) = default;
-    CoroHandler(const CoroHandler<std::conditional_t<std::is_void_v<P>, std::coroutine_handle<>, std::coroutine_handle<P>>>& h) : m_name(h.m_name), handle(h.handle) {}
-    
+    CoroHandler(const CoroHandler<P> &) = default;
+    template <typename T = P>
+    CoroHandler(const CoroHandler<std::enable_if_t<!std::is_void_v<T>, void>>& h) : m_name(h.m_name), handle(h.handle) {}
+    CoroHandler() = default;
     CoroHandler &operator=(const CoroHandler<P> &) = default;
     CoroHandler(CoroHandler<P> &&s) = default;
     CoroHandler &operator=(CoroHandler<P> &&s) = default;
 
+    template <typename S=P, typename T>
+    CoroHandler &operator=(std::enable_if_t<!std::is_void_v<T> && std::is_void_v<S>, T>&& h) {
+        m_name = h.m_name;
+        handle = h.handle;
+        return *this;
+    }
     void suspend(std::string target)
     {
         PlantUML::get_instance().message(m_name, target, "suspend()");
@@ -148,7 +155,7 @@ struct YieldAwaitable
     {
         m_name = "YieldAwaitable";
     }
-    explicit YieldAwaitable(std::coroutine_handle<> h) : consumer_coro_handle("consume_numbers", h) {}
+    explicit YieldAwaitable(CoroHandler<void> &h) : consumer_coro_handle(h) {}
     constexpr bool await_ready() const noexcept { return false; }
     std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
@@ -224,9 +231,8 @@ public:
     {
         int limit;
         std::optional<Value> value;
-        std::coroutine_handle<> consumer_coro_handle;
+        CoroHandler<void> consumer_coro_handle;
         promise_type() = default;
-        explicit promise_type(int limit) : limit(limit) {}
         GenNumber get_return_object()
         {
             return GenNumber{handle_type::from_promise(*this)};
@@ -239,7 +245,6 @@ public:
         // the co_yield expression will call this function
         YieldAwaitable yield_value(Value v)
         {
-            
             PlantUML::get_instance().message("generate_numbers", "YieldAwaitable", "yield_value");
             value = v;
             return YieldAwaitable{consumer_coro_handle};
@@ -274,7 +279,8 @@ public:
         {
             PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_transform");
             auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
-            source.handle.promise().consumer_coro_handle = std::coroutine_handle<promise_type>::from_promise(*this);
+            source.handle.promise().consumer_coro_handle.operator=<void, CoroHandler<promise_type>>(CoroHandler("consume_numbers", std::coroutine_handle<promise_type>::from_promise(*this)));
+
             return awaitable;
         }
 
