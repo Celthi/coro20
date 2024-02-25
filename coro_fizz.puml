@@ -21,8 +21,7 @@ end note
 
 generate_numbers -> YieldAwaitable : yield_value
 YieldAwaitable -> consume_numbers : resume consume_numbers
-generate_numbers -> GenNumberAwaiter : await_resume
-GenNumberAwaiter -> consume_numbers : await_resume
+consume_numbers -> GenNumberAwaiter : await_resume
 consume_numbers -> GenNumberAwaiter : co_await
 note over consume_numbers
 consume_numbers co_await result = 1 

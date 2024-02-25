@@ -222,8 +222,8 @@ public:
 
         std::optional<Value> await_resume()
         {
-            PlantUML::get_instance().message("generate_numbers", "GenNumberAwaiter", "await_resume");
-            PlantUML::get_instance().message("GenNumberAwaiter", "consume_numbers", "await_resume");
+            PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_resume");
+
             return producer_handler.promise().value;
         }
     };
