@@ -235,7 +235,10 @@ public:
             PlantUML::get_instance().note_over("GenNumberAwaiter is about to resume");
             if (!producer_handler.done())
             {
+                producer_handler.promise().value = {};
                 producer_handler.get_handle_to_resume("GenNumberAwaiter").resume();
+                if (producer_handler.done()) return std::noop_coroutine();
+                std::cout<< std::to_string(*producer_handler.promise().value) << std::endl;
                 return h;
             }
             if (!last_one) {
@@ -393,8 +396,8 @@ int main()
     PlantUML::get_instance().add_participant("GenNumberAwaiter");
     PlantUML::get_instance().add_participant("YieldAwaitable");
 
-    GenNumber c = generate_numbers(9);
-    auto res = consume_numbers(std::move(c), 6);
+    GenNumber c = generate_numbers(1);
+    auto res = consume_numbers(std::move(c), 1);
     while (std::optional<Value> vopt = res.next_value())
     {
         std::cout << "value: " << *vopt << std::endl;
