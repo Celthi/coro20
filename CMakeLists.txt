@@ -13,5 +13,6 @@ add_executable(coawait src/coawait.cpp)
 add_executable(coawaiters src/co_awaiters.cpp)
 add_executable(fizz_coawait src/fizz_coawait.cpp)
 add_executable(coro_fizz src/coro_fizz.cpp)
+add_executable(coro_trace src/coro_trace.cpp)
 
 target_compile_options(coro PRIVATE -fcoroutines-ts)

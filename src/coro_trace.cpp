@@ -8,17 +8,51 @@
 #include <string>
 #include <map>
 
+std::vector<std::string> g_statuses;
 
 class PlantUML
 {
 private:
     std::string m_file_name;
     std::ofstream m_file;
+    std::vector<std::string> m_participants;
+    std::string m_graph_text;
 
 public:
-    
+    std::string to_plant_uml()
+    {
+        std::string result = "@startuml\n";
+        for (auto &participant : m_participants)
+        {
+            result += "participant " + participant + "\n";
+        }
 
-    PlantUML(std::string file_name = "coro_fizz.puml") : m_file_name(std::move(file_name))
+        result += "\n";
+        result += m_graph_text;
+        result += "@enduml\n";
+        return result;
+    }
+
+    void to_file()
+    {
+        m_file << to_plant_uml();
+    }
+
+    void add_participant(std::string_view participant)
+    {
+        m_participants.push_back(std::string(participant));
+    }
+    void note_over(std::string_view note)
+    {
+        m_graph_text += "note over " + g_statuses.back() + " : " + std::string(note) + "\n";
+    }
+
+    void message(std::string_view from, std::string_view to, std::string_view message)
+    {
+        std::string str = std::string(from) + " -> " + std::string(to) + " : " + std::string(message);
+        m_graph_text += str + "\n";
+    }
+    PlantUML(std::string file_name = "coro_fizz_statuses.puml") : m_file_name(std::move(file_name))
     {
         m_file.open(m_file_name);
         if (!m_file.is_open())
@@ -42,50 +76,27 @@ public:
         static PlantUML instance;
         return instance;
     }
-    void startuml()
+};
+class StatusEnter
+{
+public:
+    StatusEnter(std::string_view status)
     {
-        std::cout << "@startuml" << std::endl;
-        m_file << "@startuml" << std::endl;
+        g_statuses.push_back(std::string(status));
+        if (g_statuses.size() > 1)
+        {
+            std::string message = "Entering " + g_statuses.back() + " from " + g_statuses[g_statuses.size() - 2];
+            PlantUML::get_instance().message(g_statuses[g_statuses.size() - 2], g_statuses.back(), message);
+        }
     }
-    void enduml()
+    ~StatusEnter()
     {
-        std::cout << "@enduml" << std::endl;
-        m_file << "@enduml" << std::endl;
-    }
-    void note_right(std::string_view note)
-    {
-        std::cout << "note right\n"
-                  << note << " \nend note\n"
-                  << std::endl;
-        m_file << "note right\n"
-               << note << " \nend note\n"
-               << std::endl;
-    }
-
-    void note_over(std::string_view note, std::string_view participant)
-    {
-        std::cout << "note over " << participant << "\n"
-                  << note << " \nend note\n"
-                  << std::endl;
-        m_file << "note over " << participant << "\n"
-               << note << " \nend note\n"
-               << std::endl;
-    }
-
-    void add_participant(std::string_view participant)
-    {
-        std::cout << "participant " << participant << std::endl;
-        m_file << "participant " << participant << std::endl;
-    }
-    void message(std::string_view from, std::string_view to, std::string_view message)
-    {
-        std::cout << from << " -> " << to << " : " << message << std::endl;
-        m_file << from << " -> " << to << " : " << message << std::endl;
-    }
-    void message(std::string_view from, std::string_view to, std::string_view message, std::string_view note)
-    {
-        this->message(from, to, message);
-        note_right(note);
+        g_statuses.pop_back();
+        if (g_statuses.size() > 0)
+        {
+            std::string message = "Leaving " + g_statuses.back() + " to " + g_statuses[g_statuses.size() - 1];
+            PlantUML::get_instance().message(g_statuses.back(), g_statuses[g_statuses.size() - 1], message);
+        }
     }
 };
 
@@ -96,7 +107,6 @@ class CoroHandler
 public:
     std::string m_name;
     std::coroutine_handle<P> handle;
-    std::vector<std::string> m_transfer_targets;
     CoroHandler(std::string name, std::coroutine_handle<P> h) : m_name(std::move(name)), handle(h) {}
     CoroHandler(const CoroHandler<P> &) = default;
     template <typename T = P>
@@ -115,13 +125,10 @@ public:
     }
     void suspend(std::string_view target, std::string_view note = "")
     {
-        PlantUML::get_instance().message(m_name, target, note);
-        m_transfer_targets.emplace_back(std::string(target));
     }
 
     void resume()
     {
-        PlantUML::get_instance().message(m_transfer_targets.back(), m_name, "resume()");
         handle.resume();
     }
 
@@ -143,7 +150,7 @@ public:
 
     std::conditional_t<std::is_void_v<P>, std::coroutine_handle<>, std::coroutine_handle<P>> get_handle_to_resume(std::string_view from)
     {
-        PlantUML::get_instance().message(from, m_name, "resume " + m_name);
+        StatusEnter status_enter(from);
         return handle;
     }
 
@@ -167,15 +174,16 @@ struct YieldAwaitable
     constexpr bool await_ready() const noexcept { return false; }
     std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept
     {
-        if (consumer_coro_handle)
-        {
-            return consumer_coro_handle.get_handle_to_resume(m_name);
-        }
+        // if (consumer_coro_handle)
+        // {
+        //     return consumer_coro_handle.get_handle_to_resume(m_name);
+        // }
         return std::noop_coroutine();
     }
     void await_resume() noexcept
     {
-        PlantUML::get_instance().message("YieldAwaitable", "consume_numbers", "await_resume");
+        StatusEnter status_enter("YieldAwaitable");
+        PlantUML::get_instance().note_over("YieldAwaitable is about to resume");
     }
 };
 
@@ -219,16 +227,27 @@ public:
         GenNumberAwaiter(GenNumberAwaiter &&) = default;
         GenNumberAwaiter &operator=(GenNumberAwaiter &&) = default;
         bool await_ready() const { return false; }
-        std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<>)
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<> h)
         {
-            PlantUML::get_instance().note_over("GenNumberAwaiter::await_suspend", "GenNumberAwaiter");
-            return producer_handler.get_handle_to_resume("GenNumberAwaiter");
+            static bool last_one = false;
+            StatusEnter status_enter("GenNumberAwaiter");
+            // note over
+            PlantUML::get_instance().note_over("GenNumberAwaiter is about to resume");
+            if (!producer_handler.done())
+            {
+                producer_handler.get_handle_to_resume("GenNumberAwaiter").resume();
+                return h;
+            }
+            if (!last_one) {
+                last_one = true;
+                return h;
+            }
+            return std::noop_coroutine();
         }
 
         std::optional<Value> await_resume()
         {
-            PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_resume");
-
+            StatusEnter status_enter("GenNumberAwaiter");
             return producer_handler.promise().value;
         }
     };
@@ -254,6 +273,7 @@ public:
         // the co_yield expression will call this function
         YieldAwaitable yield_value(Value v)
         {
+            StatusEnter status_enter("GenNumber");
             this->handle.suspend("YieldAwaitable", "yield_value");
 
             value = v;
@@ -287,7 +307,7 @@ public:
         // await_transform method
         GenNumber::GenNumberAwaiter await_transform(GenNumber &source)
         {
-            PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "await_transform");
+            StatusEnter status_enter("Consumer");
             auto awaitable = GenNumber::GenNumberAwaiter{source.handle};
             source.handle.promise().consumer_coro_handle.operator= <void, CoroHandler<promise_type>>(CoroHandler("consume_numbers", std::coroutine_handle<promise_type>::from_promise(*this)));
 
@@ -323,13 +343,14 @@ public:
     }
     std::optional<Value> next_value()
     {
+        StatusEnter status_enter("Consumer");
         if (handle.done())
         {
             return {};
         }
-        handle.promise().producer_handler.promise().value = {};
+        handle.promise().value = {};
         handle.resume();
-        auto v = handle.promise().producer_handler.promise().value;
+        auto v = handle.promise().value;
         return v;
     }
     bool done()
@@ -341,9 +362,11 @@ public:
 GenNumber generate_numbers(int limit)
 {
 
+    // note over
+    PlantUML::get_instance().note_over("generate_numbers is about to start");
     for (int i = 1; i <= limit; i++)
     {
-        PlantUML::get_instance().note_over("generate_numbers is about to yield " + std::to_string(i), "generate_numbers");
+        PlantUML::get_instance().note_over("generate_numbers is about to yield " + std::to_string(i));
         Value v = i;
         co_yield v;
     }
@@ -351,36 +374,30 @@ GenNumber generate_numbers(int limit)
 
 Consumer consume_numbers(GenNumber source, int divisor)
 {
-    PlantUML::get_instance().note_over("consume_numbers is about to call await_transform", "consume_numbers");
-    while (std::optional<Value> vopt = co_await source) // Consumer::await_transform -> GenNumberAwaiter::await_suspend ->generate_numbers::resume() -> *yieldawaitable::await_suspend* -> consumer_coro_handle.resume() -> GenNumberAwaiter::await_resume
-    {
-        PlantUML::get_instance().message("consume_numbers", "GenNumberAwaiter", "co_await");
 
-        PlantUML::get_instance().note_over("consume_numbers co_await result = " + std::to_string(*vopt), "consume_numbers");
+    StatusEnter status_enter("consume_numbers");
+    while (std::optional<Value> vopt = co_await source)
+    {
         if (*vopt % divisor == 0)
         {
             co_yield vopt;
         }
-        PlantUML::get_instance().note_over("consume_numbers is about to co_await next value", "consume_numbers");
     }
-    PlantUML::get_instance().note_over("consume_numbers end...", "consume_numbers");
 }
 
 int main()
 {
-    PlantUML::get_instance().startuml();
     PlantUML::get_instance().add_participant("main");
     PlantUML::get_instance().add_participant("consume_numbers");
     PlantUML::get_instance().add_participant("generate_numbers");
     PlantUML::get_instance().add_participant("GenNumberAwaiter");
     PlantUML::get_instance().add_participant("YieldAwaitable");
 
-    GenNumber c = generate_numbers(1);
-    auto res = consume_numbers(std::move(c), 1);
-    PlantUML::get_instance().message("main", "consume_numbers", "consume_numbers.next_value()");
+    GenNumber c = generate_numbers(9);
+    auto res = consume_numbers(std::move(c), 6);
     while (std::optional<Value> vopt = res.next_value())
     {
-        PlantUML::get_instance().note_over("main: consume_numbers next value = " + std::to_string(*vopt), "main");
+        std::cout << "value: " << *vopt << std::endl;
     }
-    PlantUML::get_instance().enduml();
+    PlantUML::get_instance().to_file();
 }

@@ -1,0 +1,169 @@
+@startuml
+participant main
+participant consume_numbers
+participant generate_numbers
+participant GenNumberAwaiter
+participant YieldAwaitable
+
+Consumer -> consume_numbers : Entering consume_numbers from Consumer
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to start
+note over GenNumberAwaiter : generate_numbers is about to yield 1
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 2
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 3
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 4
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 5
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> Consumer : Entering Consumer from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 6
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+consume_numbers -> GenNumberAwaiter : Entering GenNumberAwaiter from consume_numbers
+consume_numbers -> consume_numbers : Leaving consume_numbers to consume_numbers
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 7
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 8
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+note over GenNumberAwaiter : generate_numbers is about to yield 9
+GenNumberAwaiter -> GenNumber : Entering GenNumber from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Entering GenNumberAwaiter from GenNumberAwaiter
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+GenNumberAwaiter -> YieldAwaitable : Entering YieldAwaitable from GenNumberAwaiter
+note over YieldAwaitable : YieldAwaitable is about to resume
+GenNumberAwaiter -> GenNumberAwaiter : Leaving GenNumberAwaiter to GenNumberAwaiter
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Entering Consumer from Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> GenNumberAwaiter : Entering GenNumberAwaiter from Consumer
+note over GenNumberAwaiter : GenNumberAwaiter is about to resume
+Consumer -> Consumer : Leaving Consumer to Consumer
+Consumer -> Consumer : Leaving Consumer to Consumer
+@enduml

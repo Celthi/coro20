@@ -59,6 +59,12 @@
         "__memory": "cpp",
         "source_location": "cpp",
         "fstream": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "__tree": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "regex": "cpp",
+        "set": "cpp",
+        "typeindex": "cpp"
     }
 }
